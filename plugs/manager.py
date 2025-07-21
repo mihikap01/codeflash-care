@@ -29,7 +29,9 @@ class PlugManager:
     def install(self) -> None:
         packages = {f"{x.package_name}{x.version}" for x in self.plugs}
         if packages:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", *packages])  # noqa: S603
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", *packages]
+            )  # noqa: S603
 
     def add_plug(self, plug: Plug) -> None:
         if not isinstance(plug, Plug):
@@ -41,10 +43,20 @@ class PlugManager:
         return [plug.name for plug in self.plugs]
 
     def get_config(self) -> defaultdict[str, dict]:
+        """
+        Returns a dict mapping plug names to combined configs.
+        Optimized to minimize per-item Python lookups and allocations.
+        """
         configs: defaultdict[str, dict] = defaultdict(dict)
         for plug in self.plugs:
-            if plug.configs is None:
+            plug_configs = plug.configs
+            if not plug_configs:
                 continue
-            for key, value in plug.configs.items():
-                configs[plug.name][key] = value
+            config = configs[plug.name]
+            if not config:
+                # If it's a new entry, copy the whole dict at once
+                configs[plug.name] = plug_configs.copy()
+            else:
+                # Otherwise just update, which is about as fast as possible
+                config.update(plug_configs)
         return configs
