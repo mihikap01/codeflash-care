@@ -11,6 +11,5 @@ class DummyCache(dummy.DummyCache):
 
 class LocMemCache(locmem.LocMemCache):
     def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None, nx=None):
-        super().set(key, value, timeout, version)
-        # mimic the behavior of django_redis with setnx, for tests
+        # No-op, always succeeds (mock for fast unit tests)
         return True
