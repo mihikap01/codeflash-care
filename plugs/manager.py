@@ -19,17 +19,22 @@ class PlugManager:
         self.plugs: list[Plug] = plugs
 
         # load additional plugs from environment variable
-        if additional_plugs := os.getenv("ADDITIONAL_PLUGS"):
+        additional_plugs = os.environ.get("ADDITIONAL_PLUGS")
+        if additional_plugs:
             try:
+                add_plug = self.add_plug
+                PlugCls = Plug
                 for plug in json.loads(additional_plugs):
-                    self.add_plug(Plug(**plug))
+                    add_plug(PlugCls(**plug))
             except json.JSONDecodeError:
                 logger.error("ADDITIONAL_PLUGS is not a valid JSON")
 
     def install(self) -> None:
         packages = {f"{x.package_name}{x.version}" for x in self.plugs}
         if packages:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", *packages])  # noqa: S603
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", *packages]
+            )  # noqa: S603
 
     def add_plug(self, plug: Plug) -> None:
         if not isinstance(plug, Plug):
@@ -38,7 +43,8 @@ class PlugManager:
         self.plugs.append(plug)
 
     def get_apps(self) -> list[str]:
-        return [plug.name for plug in self.plugs]
+        plugs = self.plugs  # local var for faster access in loop
+        return [plug.name for plug in plugs]
 
     def get_config(self) -> defaultdict[str, dict]:
         configs: defaultdict[str, dict] = defaultdict(dict)
