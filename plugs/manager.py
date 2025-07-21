@@ -29,7 +29,9 @@ class PlugManager:
     def install(self) -> None:
         packages = {f"{x.package_name}{x.version}" for x in self.plugs}
         if packages:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", *packages])  # noqa: S603
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", *packages]
+            )  # noqa: S603
 
     def add_plug(self, plug: Plug) -> None:
         if not isinstance(plug, Plug):
@@ -42,9 +44,10 @@ class PlugManager:
 
     def get_config(self) -> defaultdict[str, dict]:
         configs: defaultdict[str, dict] = defaultdict(dict)
-        for plug in self.plugs:
-            if plug.configs is None:
+        plugs = self.plugs  # Local variable for faster access
+        for plug in plugs:
+            cfgs = plug.configs
+            if not cfgs:
                 continue
-            for key, value in plug.configs.items():
-                configs[plug.name][key] = value
+            configs[plug.name].update(cfgs)
         return configs
