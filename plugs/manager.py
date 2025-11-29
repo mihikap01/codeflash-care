@@ -29,7 +29,9 @@ class PlugManager:
     def install(self) -> None:
         packages = {f"{x.package_name}{x.version}" for x in self.plugs}
         if packages:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", *packages])  # noqa: S603
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", *packages]
+            )  # noqa: S603
 
     def add_plug(self, plug: Plug) -> None:
         if not isinstance(plug, Plug):
@@ -42,9 +44,16 @@ class PlugManager:
 
     def get_config(self) -> defaultdict[str, dict]:
         configs: defaultdict[str, dict] = defaultdict(dict)
+        get_name = Plug.name.__get__  # Avoid attribute lookup inside loop
+        configs_get = configs.get
+        configs_setdefault = configs.setdefault
+
         for plug in self.plugs:
-            if plug.configs is None:
+            plug_configs = plug.configs
+            if not plug_configs:
                 continue
-            for key, value in plug.configs.items():
-                configs[plug.name][key] = value
+            pname = plug.name
+            # Avoid inner dict creation/lookup more than necessary
+            config_dict = configs_setdefault(pname, {})
+            config_dict.update(plug_configs)
         return configs
